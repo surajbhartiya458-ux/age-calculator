@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Age Insights & Celebration Engine</title>
+    <!-- Google Fonts & Premium Libraries -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-glow: #0a051b;
+            --primary: #6c5ce7;
+            --secondary: #00cec9;
+            --accent: #ff7675;
+            --card-bg: rgba(13, 9, 33, 0.65);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-glow); color: #fff; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        /* Premium Glow Card */
+        .app-container {
+            position: relative;
+            z-index: 10;
+            background: var(--card-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 40px;
+            border-radius: 28px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .app-container::before {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 30px; z-index: -1; opacity: 0.15; transition: opacity 0.3s;
+        }
+        .app-container:hover::before { opacity: 0.3; }
+
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; background: linear-gradient(to right, #fff, #b2bec3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p.subtitle { color: #636e72; font-size: 14px; margin-bottom: 30px; letter-spacing: 0.5px; }
+
+        /* Custom Input Styling */
+        .input-wrapper { position: relative; margin-bottom: 24px; }
+        input[type="date"] {
+            width: 100%; padding: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+            background: rgba(255,255,255,0.03); color: #fff; font-size: 16px; font-weight: 600; outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-align: center;
+        }
+        input[type="date"]:focus { border-color: var(--secondary); background: rgba(255,255,255,0.06); box-shadow: 0 0 20px rgba(0, 206, 201, 0.2); }
+
+        /* Pro CTA Button */
+        button {
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), #574b90); color: white;
+            font-size: 16px; font-weight: 600; cursor: pointer; letter-spacing: 0.5px;
+            transition: all 0.3s; position: relative; overflow: hidden;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(108, 92, 231, 0.4); }
+        button:active { transform: translateY(0); }
+
+        /* Dashboard-Style Metrics Grid */
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 35px; display: none; }
+        .metric-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            padding: 15px 10px; border-radius: 16px; text-align: center;
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; opacity: 0;
+        }
+        .metric-value { font-size: 28px; font-weight: 800; color: var(--secondary); margin-bottom: 4px; }
+        .metric-label { font-size: 11px; text-transform: uppercase; color: #636e72; letter-spacing: 1px; font-weight: 600; }
+
+        /* Advanced Birthday Banner */
+        .bday-banner {
+            margin-top: 25px; padding: 15px; background: linear-gradient(90deg, rgba(255,118,117,0.1), rgba(108,92,231,0.1));
+            border: 1px solid rgba(255,118,117,0.2); border-radius: 16px; display: none;
+            animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .bday-banner h2 { font-size: 20px; color: var(--accent); text-shadow: 0 0 15px rgba(255,118,117,0.4); }
+
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div class="app-container">
+        <h1>Age Insights</h1>
+        <p class="subtitle">PREMIUM CHRONOLOGICAL ANALYTICS</p>
+        
+        <div class="input-wrapper">
+            <input type="date" id="birthdate">
+        </div>
+        <button onclick="processAgeData()">Analyze Analytics</button>
+        
+        <!-- Metrics Grid -->
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="metric-card" style="animation-delay: 0.1s;">
+                <div class="metric-value" id="val-years">0</div>
+                <div class="metric-label">Years</div>
+            </div>
+            <div class="metric-card" style="animation-delay: 0.2s;">
+                <div class="metric-value" id="val-months">0</div>
+                <div class="metric-label">Months</div>
+            </div>
+            <div class="metric-card" style="animation-delay: 0.3s;">
+                <div class="metric-value" id="val-days">0</div>
+                <div class="metric-label">Days</div>
+            </div>
+        </div>
+
+        <!-- Birthday Alert -->
+        <div class="bday-banner" id="bdayBanner">
+            <h2>🎉 Happy Birthday! 🎂</h2>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Interactive Three.js Constellation Background ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Stars / Nodes geometry
+        const starsGeometry = new THREE.BufferGeometry();
+        const count = 150;
+        const positions = new Float32Array(count * 3);
+
+        for(let i=0; i<count*3; i++) {
+            positions[i] = (Math.random() - 0.5) * 50;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        // Premium glowing dot texture simulation
+        const starsMaterial = new THREE.PointsMaterial({
+            color: 0x00cec9,
+            size: 0.25,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+        camera.position.z = 15;
+
+        // Mouse Tracking Effect
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        });
+
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+            // Soft rotation + mouse tracking dampening
+            starField.rotation.y += 0.001;
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+            renderer.render(scene, camera);
+        }
+        renderLoop();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- 2. Advanced Professional Logic & Counter Ticker ---
+        function processAgeData() {
+            const input = document.getElementById('birthdate').value;
+            if (!input) return;
+
+            const birthDate = new Date(input);
+            const today = new Date();
+
+            let targetYears = today.getFullYear() - birthDate.getFullYear();
+            let targetMonths = today.getMonth() - birthDate.getMonth();
+            let targetDays = today.getDate() - birthDate.getDate();
+
+            if (targetDays < 0) {
+                targetMonths--;
+                targetDays += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+            }
+            if (targetMonths < 0) {
+                targetYears--;
+                targetMonths += 12;
+            }
+
+            // Show Grid
+            const grid = document.getElementById('metricsGrid');
+            grid.style.display = 'grid';
+
+            // Pro Number Counting Ticker
+            animateCount('val-years', targetYears);
+            animateCount('val-months', targetMonths);
+            animateCount('val-days', targetDays);
+
+            // High-End Birthday Engine
+            const bdayBanner = document.getElementById('bdayBanner');
+            if (today.getMonth() === birthDate.getMonth() && today.getDate() === birthDate.getDate()) {
+                bdayBanner.style.display = 'block';
+                triggerProConfetti();
+            } else {
+                bdayBanner.style.display = 'none';
+            }
+        }
+
+        // Smooth Counter Ticker Function
+        function animateCount(id, targetValue) {
+            const obj = document.getElementById(id);
+            let start = 0;
+            const duration = 1000; // 1 second
+            const startTime = performance.now();
+
+            function updateNumber(now) {
+                const progress = Math.min((now - startTime) / duration, 1);
+                // Ease out cubic effect
+                const easeOut = 1 - Math.pow(1 - progress, 3); 
+                obj.innerText = Math.floor(easeOut * targetValue);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateNumber);
+                } else {
+                    obj.innerText = targetValue;
+                }
+            }
+            requestAnimationFrame(updateNumber);
+        }
+
+        // Multi-layered Professional Confetti Launch
+        function triggerProConfetti() {
+            const colors = ['#6c5ce7', '#00cec9', '#ff7675', '#fdcb6e'];
+            // Left burst
+            confetti({ particleCount: 80, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors: colors });
+            // Right burst
+            confetti({ particleCount: 80, angle: 120, spread: 60, origin: { x: 1, y: 0.7 }, colors: colors });
+            
+            // Center subtle firework drop after 200ms
+            setTimeout(() => {
+                confetti({ particleCount: 40, spread: 100, origin: { x: 0.5, y: 0.4 }, colors: colors });
+            }, 200);
+        }
+    </script>
+</body>
+</html>
